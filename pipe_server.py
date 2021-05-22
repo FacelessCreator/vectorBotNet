@@ -15,22 +15,28 @@ pipes = dict() # {"output_name": ["input_name"]}
 log_from = None
 local_log = []
 
+cat_file = None
+cat_robot = None
+
 def pipeLoop(server: botNet.BotNetServer, stop_event: threading.Event):
-    global pipes, log_from, local_log
+    global pipes, log_from, local_log, cat_file, cat_robot
     while not stop_event.is_set():
         names = server.getNames()
         for name in names:
             t, vect = server.getLastVector(name)
-            if vect and name in pipes:
-                for pipe_to in pipes[name]:
-                    server.sendVector(pipe_to, t, vect)
-            if vect and log_from == name:
-                local_log.append((t, vect))
-                print("{}: {}".format(t, vect))
+            if vect:
+                if name in pipes:
+                    for pipe_to in pipes[name]:
+                        server.sendVector(pipe_to, t, vect)
+                if log_from == name:
+                    local_log.append((t, vect))
+                    print("{}: {}".format(t, vect))
+                if name == cat_robot:
+                    cat_file.write("{}: {}\n".format(t, vect))
         time.sleep(0.01)
 
 def consoleLoop(server: botNet.BotNetServer, stop_event: threading.Event):
-    global pipes, log_from, local_log
+    global pipes, log_from, local_log, cat_file, cat_robot
     while not stop_event.is_set():
         # get input
         print("> ", end="")
@@ -193,6 +199,42 @@ def consoleLoop(server: botNet.BotNetServer, stop_event: threading.Event):
             except ValueError:
                 print("the coefficients must be float")
                 continue
+        elif args[0] == "cat":
+            if len(args) == 1:
+                if cat_robot:
+                    print("{} > {}".format(cat_robot, cat_file.name))
+                continue
+            if args[1] == "-a":
+                if len(args) < 4:
+                    print("not enough args")
+                    continue
+                robot_in = args[2]
+                if not robot_in in server.getNames():
+                    print('no such robot "{}"'.format(robot_in))
+                    continue
+                file_name = args[3]
+                try:
+                    cat_file = open(file_name, "a")
+                    cat_robot = robot_in
+                except Exception as e:
+                    print(e)
+            elif args[1] == "-r":
+                cat_robot = None
+                cat_file.close()
+            else:
+                if len(args) < 3:
+                    print("not enough args")
+                    continue
+                robot_in = args[1]
+                if not robot_in in server.getNames():
+                    print('no such robot "{}"'.format(robot_in))
+                    continue
+                file_name = args[2]
+                try:
+                    cat_file = open(file_name, "w")
+                    cat_robot = robot_in
+                except Exception as e:
+                    print(e)
         else:
             print('unknown command "{}". Use "help" to view list of commands'.format(args[0]))
 
