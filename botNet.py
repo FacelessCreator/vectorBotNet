@@ -17,7 +17,7 @@ class BotNetServer():
         main_thread.start()
     async def readingFunction(self):
         while True:
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(0.001)
             self.lock.acquire()
             for name in self.connections:
                 connection = self.connections[name]
@@ -193,7 +193,7 @@ class BotNetClient():
             message = self.connection.get_last()
             if not message:
                 self.lock.release()
-                await asyncio.sleep(0.01)
+                await asyncio.sleep(0.001)
                 continue
             msg_type = message["type"]
             if msg_type == "vector":

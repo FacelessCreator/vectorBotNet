@@ -107,6 +107,9 @@ function getInputAngles() {
     return [parseFloat(inputControlTeta1.value), parseFloat(inputControlTeta2.value), parseFloat(inputControlTeta3.value)].map(function(x) { return x * Math.PI / 180; });;
 }
 
+VRContainer = document.getElementById("VR-container");
+menuContainer = document.getElementById("menu-container");
+
 /*  --------------
         AFRAME
     -------------- */
@@ -335,3 +338,7 @@ function eventUpdateTime() {
     displayCurrentTime(getCurrentTime());
 }
 setInterval(eventUpdateTime, 100);
+
+function eventButtonFullscreen() {
+    VRContainer.requestFullscreen();
+}

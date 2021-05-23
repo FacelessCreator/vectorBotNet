@@ -10,7 +10,7 @@ class JsonWebsocket():
     async def send_function(self):
         while (self.websocket):
             if (len(self.out_buffer) == 0):
-                await asyncio.sleep(0.01)
+                await asyncio.sleep(0.001)
             else:
                 message = self.out_buffer.pop(0)
                 messageStr = json.dumps(message)
