@@ -18,6 +18,8 @@ local_log = []
 cat_file = None
 cat_robot = None
 
+start_time = time.time()
+
 def pipeLoop(server: botNet.BotNetServer, stop_event: threading.Event):
     global pipes, log_from, local_log, cat_file, cat_robot
     while not stop_event.is_set():
@@ -36,7 +38,7 @@ def pipeLoop(server: botNet.BotNetServer, stop_event: threading.Event):
         time.sleep(0.01)
 
 def consoleLoop(server: botNet.BotNetServer, stop_event: threading.Event):
-    global pipes, log_from, local_log, cat_file, cat_robot
+    global pipes, log_from, local_log, cat_file, cat_robot, start_time
     while not stop_event.is_set():
         # get input
         print("> ", end="")
@@ -174,7 +176,7 @@ def consoleLoop(server: botNet.BotNetServer, stop_event: threading.Event):
                 continue
             log_from = name
             local_log.clear()
-            start_time = time.time()
+            trace_start_time = time.time()
             # wait for signal from user
             try:
                 line = input()
@@ -182,7 +184,7 @@ def consoleLoop(server: botNet.BotNetServer, stop_event: threading.Event):
                 stop_event.set()
                 return
             log_from = None
-            print("Total: accepted {} packages in {} seconds".format(len(local_log), int(time.time() - start_time)))
+            print("Total: accepted {} packages in {} seconds".format(len(local_log), int(time.time() - trace_start_time)))
         elif args[0] == "send":
             if len(args) < 2:
                 print("not enough args")
@@ -195,7 +197,7 @@ def consoleLoop(server: botNet.BotNetServer, stop_event: threading.Event):
             try:
                 for i in range(2, len(args)):
                     vect.append(float(args[i]))
-                server.sendVector(name, time.time(), vect)
+                server.sendVector(name, time.time() - start_time, vect)
             except ValueError:
                 print("the coefficients must be float")
                 continue
