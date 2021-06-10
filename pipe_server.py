@@ -3,7 +3,9 @@ import time
 import signal
 import sys
 
+import jsonWebsocket
 import botNet
+import pipeGUIServer
 
 HOST = "0.0.0.0"
 PORT = 8080
@@ -18,27 +20,53 @@ local_log = []
 cat_file = None
 cat_robot = None
 
+robotServer = None
+GUIServer = None
+
 start_time = time.time()
 
-def pipeLoop(server: botNet.BotNetServer, stop_event: threading.Event):
-    global pipes, log_from, local_log, cat_file, cat_robot
+def newGUIEvent(jws: jsonWebsocket.JsonWebsocket):
+    global robotServer
+    for name in robotServer.getNames():
+        message = {"type": "new_client", "name":name, "vector_format":robotServer.getVectorFormat(name), "coefficients_format":robotServer.getCoefficientsFormat(name)}
+        GUI_format = robotServer.getGUIFormat(name)
+        if GUI_format:
+            message["GUI_format"] = GUI_format
+        jws.send(message)
+
+def sendVector(robot_from, robot_to, t, vector_from):
+    global robotServer
+    vector_format_from = robotServer.getVectorFormat(robot_from)
+    vector_format_to = robotServer.getVectorFormat(robot_to)
+    vector_to = list()
+    for i in range(0, len(vector_format_to)):
+        if vector_format_to[i] in vector_format_from:
+            j = vector_format_from.index(vector_format_to[i])
+            vector_to.append(vector_from[j])
+        else:
+            vector_to.append(None)
+    robotServer.sendVector(robot_to, t, vector_to)
+
+def pipeLoop(stop_event: threading.Event):
+    global GUIServer, robotServer, pipes, log_from, local_log, cat_file, cat_robot
     while not stop_event.is_set():
-        names = server.getNames()
-        for name in names:
-            t, vect = server.getLastVector(name)
+        robots_from = robotServer.getNames()
+        for robot_from in robots_from:
+            t, vect = robotServer.getLastVector(robot_from)
             if vect:
-                if name in pipes:
-                    for pipe_to in pipes[name]:
-                        server.sendVector(pipe_to, t, vect)
-                if log_from == name:
+                GUIServer.newVectorEvent(robot_from, t, vect)
+                if robot_from in pipes:
+                    for robot_to in pipes[robot_from]:
+                        sendVector(robot_from, robot_to, t, vect)
+                if log_from == robot_from:
                     local_log.append((t, vect))
                     print("{}: {}".format(t, vect))
-                if name == cat_robot:
+                if robot_from == cat_robot:
                     cat_file.write("{}: {}\n".format(t, vect))
         time.sleep(0.01)
 
-def consoleLoop(server: botNet.BotNetServer, stop_event: threading.Event):
-    global pipes, log_from, local_log, cat_file, cat_robot, start_time
+def consoleLoop(stop_event: threading.Event):
+    global robotServer, pipes, log_from, local_log, cat_file, cat_robot, start_time
     while not stop_event.is_set():
         # get input
         print("> ", end="")
@@ -60,10 +88,10 @@ def consoleLoop(server: botNet.BotNetServer, stop_event: threading.Event):
             longForm = False
             if len(args) > 1 and args[1] == "-l":
                 longForm = True
-            for name in server.getNames():
+            for name in robotServer.getNames():
                 if longForm:
-                    vector_format = server.getVectorFormat(name)
-                    coefficients_format = server.getCoefficientsFormat(name)
+                    vector_format = robotServer.getVectorFormat(name)
+                    coefficients_format = robotServer.getCoefficientsFormat(name)
                     print("{}: {} {}".format(name, vector_format, coefficients_format))
                 else:
                     print(name, end=" ")
@@ -75,59 +103,59 @@ def consoleLoop(server: botNet.BotNetServer, stop_event: threading.Event):
                 continue
             name = args[1]
             value = int(args[2])
-            if not name in server.getNames():
+            if not name in robotServer.getNames():
                 print('no such robot "{}"'.format(name))
                 continue
             if not (value == 1 or value == 0):
                 print('wrong value "{}"'.format(value))
                 continue
-            server.setLogging(name, value)
+            robotServer.setLogging(name, value)
         elif args[0] == "control":
             if len(args) < 3:
                 print("not enough args")
                 continue
             name = args[1]
             value = int(args[2])
-            if not name in server.getNames():
+            if not name in robotServer.getNames():
                 print('no such robot "{}"'.format(name))
                 continue
             if not (value == 1 or value == 0):
                 print('wrong value "{}"'.format(value))
                 continue
-            server.setControlling(name, value)
+            robotServer.setControlling(name, value)
         elif args[0] == "clear":
             if len(args) < 2:
                 print("not enough args")
                 continue
             name = args[1]
-            if not name in server.getNames():
+            if not name in robotServer.getNames():
                 print('no such robot "{}"'.format(name))
                 continue
-            server.clear(name)
+            robotServer.clear(name)
         elif args[0] == "wtf":
             if len(args) < 2:
                 print("not enough args")
                 continue
             name = args[1]
-            if not name in server.getNames():
+            if not name in robotServer.getNames():
                 print('no such robot "{}"'.format(name))
                 continue
-            vector_format = server.getVectorFormat(name)
-            coefficients_format = server.getCoefficientsFormat(name)
+            vector_format = robotServer.getVectorFormat(name)
+            coefficients_format = robotServer.getCoefficientsFormat(name)
             print("{}: {} {}".format(name, vector_format, coefficients_format))
         elif args[0] == "k":
             if len(args) < 2:
                 print("not enough args")
                 continue
             name = args[1]
-            if not name in server.getNames():
+            if not name in robotServer.getNames():
                 print('no such robot "{}"'.format(name))
                 continue
             coefficients = []
             try:
                 for i in range(2, len(args)):
                     coefficients.append(float(args[i]))
-                server.setCoefficients(name, coefficients)
+                robotServer.setCoefficients(name, coefficients)
             except ValueError:
                 print("the coefficients must be float")
                 continue
@@ -159,7 +187,7 @@ def consoleLoop(server: botNet.BotNetServer, stop_event: threading.Event):
                     continue
                 pipe_from = args[1]
                 pipe_to = args[2]
-                names = server.getNames()
+                names = robotServer.getNames()
                 if not pipe_from in names or not pipe_to in names:
                     print("robots not found")
                     continue
@@ -171,7 +199,7 @@ def consoleLoop(server: botNet.BotNetServer, stop_event: threading.Event):
                 print("not enough args")
                 continue
             name = args[1]
-            if not name in server.getNames():
+            if not name in robotServer.getNames():
                 print('no such robot "{}"'.format(name))
                 continue
             log_from = name
@@ -190,14 +218,14 @@ def consoleLoop(server: botNet.BotNetServer, stop_event: threading.Event):
                 print("not enough args")
                 continue
             name = args[1]
-            if not name in server.getNames():
+            if not name in robotServer.getNames():
                 print('no such robot "{}"'.format(name))
                 continue
             vect = []
             try:
                 for i in range(2, len(args)):
                     vect.append(float(args[i]))
-                server.sendVector(name, time.time() - start_time, vect)
+                robotServer.sendVector(name, time.time() - start_time, vect)
             except ValueError:
                 print("the coefficients must be float")
                 continue
@@ -211,7 +239,7 @@ def consoleLoop(server: botNet.BotNetServer, stop_event: threading.Event):
                     print("not enough args")
                     continue
                 robot_in = args[2]
-                if not robot_in in server.getNames():
+                if not robot_in in robotServer.getNames():
                     print('no such robot "{}"'.format(robot_in))
                     continue
                 file_name = args[3]
@@ -228,7 +256,7 @@ def consoleLoop(server: botNet.BotNetServer, stop_event: threading.Event):
                     print("not enough args")
                     continue
                 robot_in = args[1]
-                if not robot_in in server.getNames():
+                if not robot_in in robotServer.getNames():
                     print('no such robot "{}"'.format(robot_in))
                     continue
                 file_name = args[2]
@@ -242,15 +270,21 @@ def consoleLoop(server: botNet.BotNetServer, stop_event: threading.Event):
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print("wrong args; use HOST PORT")
+        print("wrong args; use ROBOTS_PORT GUI_PORT")
         exit()
-    HOST = sys.argv[1]
-    PORT = sys.argv[2]    
+    HOST = "0.0.0.0"
+    ROBOTS_PORT = sys.argv[1]
+    GUI_PORT = sys.argv[2]
 
-    server = botNet.BotNetServer(HOST, PORT)
+    robotServer = botNet.BotNetServer(HOST, ROBOTS_PORT)
+    GUIServer = pipeGUIServer.PipeGUIServer(HOST, GUI_PORT)
 
-    console_thread = threading.Thread(target=consoleLoop, args=(server, stop_event))
-    pipe_thread = threading.Thread(target=pipeLoop, args=(server, stop_event), daemon=True)
+    robotServer.newClientEvent = GUIServer.newClientEvent
+    robotServer.lostClientEvent = GUIServer.lostClientEvent
+    GUIServer.newGUIEvent = newGUIEvent
+
+    console_thread = threading.Thread(target=consoleLoop, args=(stop_event,))
+    pipe_thread = threading.Thread(target=pipeLoop, args=(stop_event,), daemon=True)
     
     console_thread.start()
     pipe_thread.start()

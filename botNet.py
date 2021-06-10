@@ -9,10 +9,13 @@ class BotNetServer():
         self.connections = dict()
         self.vector_formats = dict()
         self.coefficients_formats = dict()
+        self.GUI_formats = dict()
         self.host = host
         self.port = port
         self.vectors = dict()
         self.lock = threading.Lock()
+        self.newClientEvent = None
+        self.lostClientEvent = None
         main_thread = threading.Thread(target=self.mainLoop, args=(), daemon=True)
         main_thread.start()
     async def readingFunction(self):
@@ -44,6 +47,10 @@ class BotNetServer():
         if not "vector_format" in greeting or not "coefficients_format" in greeting:
             await websocket.send('{"type":"connect_answer", "code": 4}')
             return
+        if not "GUI_format" in greeting:
+            GUI_format = Null
+        else:
+            GUI_format = greeting["GUI_format"]
         vector_format = greeting["vector_format"]
         coefficients_format = greeting["coefficients_format"]
         name = greeting["name"]
@@ -59,6 +66,9 @@ class BotNetServer():
         self.vector_formats[name] = vector_format
         self.coefficients_formats[name] = coefficients_format
         self.vectors[name] = []
+        self.GUI_formats[name] = GUI_format
+        if self.newClientEvent:
+            self.newClientEvent(name, vector_format, coefficients_format, GUI_format)
         self.lock.release()
         await asyncio.gather(*tasks)
         self.lock.acquire()
@@ -66,6 +76,9 @@ class BotNetServer():
         self.vector_formats.pop(name)
         self.coefficients_formats.pop(name)
         self.vectors.pop(name)
+        self.GUI_formats.pop(name)
+        if self.lostClientEvent:
+            self.lostClientEvent(name)
         self.lock.release()
     def mainLoop(self):
         ioloop = asyncio.new_event_loop()
@@ -104,6 +117,11 @@ class BotNetServer():
         res = self.coefficients_formats[name]
         self.lock.release()
         return res
+    def getGUIFormat(self, name):
+        self.lock.acquire()
+        res = self.GUI_formats[name]
+        self.lock.release()
+        return res
     def sendVector(self, name, t, vector):
         self.lock.acquire()
         if name in self.connections:
@@ -137,13 +155,14 @@ class BotNetServer():
         self.lock.release()
 
 class BotNetClient():
-    def __init__(self, host, port, vector_format, coefficients_format, name):
+    def __init__(self, host, port, vector_format, coefficients_format, GUI_format, name):
         self.connection = None
         self.vectors = []
         self.host = host
         self.port = port
         self.vector_format = vector_format
         self.coefficients_format = coefficients_format
+        self.GUI_format = GUI_format
         self.name = name
 
         self.isLogging = False
@@ -170,7 +189,7 @@ class BotNetClient():
         except OSError as e:
             print(e)
             return
-        message = {"type": "connect", "vector_format": self.vector_format, "coefficients_format": self.coefficients_format, "name": self.name}
+        message = {"type": "connect", "vector_format": self.vector_format, "coefficients_format": self.coefficients_format, "GUI_format": self.GUI_format, "name": self.name}
         messageStr = json.dumps(message)
         await websocket.send(messageStr)
         greetingStr = await websocket.recv()

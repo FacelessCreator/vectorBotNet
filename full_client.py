@@ -17,7 +17,7 @@ if __name__ == "__main__":
     PORT = sys.argv[2]
     CLIENT_NAME = sys.argv[3]
 
-    connection = botNet.BotNetClient(HOST, PORT, ["teta"], ["k"], CLIENT_NAME)
+    connection = botNet.BotNetClient(HOST, PORT, ["teta"], ["k"], None, CLIENT_NAME)
     time.sleep(1)
     if not connection.isConnected():
         print("no connection")
