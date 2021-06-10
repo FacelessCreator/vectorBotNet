@@ -15,7 +15,7 @@ def anglesToCoords(tetas: list, sizes: list):
     k0 = T10.dot(T21).dot(T32).dot(k3)
     x = k0[0][0]
     y = k0[1][0]
-    z = k0[2][0]
+    z = -k0[2][0]
     return [x, y, z]
 
 def coordsToAngles(coords: list, sizes: list):

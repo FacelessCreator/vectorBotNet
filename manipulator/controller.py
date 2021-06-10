@@ -3,7 +3,7 @@ import math
 class PID():
     def __init__(self, value):
         self.coefficients = {
-            "kp": 0,
+            "kp": 50,
             "ki": 0,
             "kd": 0
         }

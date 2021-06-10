@@ -18,7 +18,7 @@ ke = 0.583
 J = 0.0024
 R = 8.4
 
-SIZES = [1, 1, 1]
+SIZES = [1, 3, 5]
 
 OUTPUT_NAMES = [1, 2, 3, 4]
 
@@ -54,7 +54,7 @@ class Manipulator():
             if distance > SIZES[1]+SIZES[2] :
                 print(f"Координаты {x, y, z} недопустимы для данных размеров робота.")
                 return False
-            angles = coordsToAngles([x, y, z], SIZES)
+            angles = coordsToAngles([x, y, -z], SIZES)
         else:
             angles = target[3:]
         self.angles_target = angles
@@ -101,6 +101,8 @@ if __name__ == "__main__":
     robot = Manipulator()
     connection.clearEvent = robot.clearEvent
     connection.setCoefficientsEvent = robot.setCoefficientsEvent
+    connection.isControlling = True
+    connection.isLogging = True
 
     start_time = robot.start_time
     time_now = 0 
