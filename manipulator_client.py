@@ -106,7 +106,7 @@ if __name__ == "__main__":
     time_now = 0 
     time.sleep(3) # wait for connection
     while connection.isConnected():
-        dt = time.time() - start_time - time_now
+        dt = time.time() - robot.start_time - time_now
         time_now += dt
         if connection.isControlling:
             if sum(robot.e) < (15/180*pi) and connection.vectors:

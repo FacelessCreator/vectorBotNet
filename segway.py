@@ -3,7 +3,7 @@ import time
 import numpy as np
 
 import sys
-sys.path.insert(1, 'build 3/segway')
+sys.path.insert(1, './segway')
 
 from physics import Physics
 import defaults
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     CLIENT_NAME = sys.argv[3]
 
     connection = botNet.BotNetClient(HOST, PORT, ["x", "z", "beta", "psi"], ["KtetaT","psiMax","Krot","rotMax","tp"], {"model": "segway", "size": 1}, CLIENT_NAME)
-    time.sleep(1)
+    time.sleep(3)
     if not connection.isConnected():
         print("no connection")
         exit()
