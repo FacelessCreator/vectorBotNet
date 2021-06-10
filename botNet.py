@@ -137,13 +137,14 @@ class BotNetServer():
         self.lock.release()
 
 class BotNetClient():
-    def __init__(self, host, port, vector_format, coefficients_format, name):
+    def __init__(self, host, port, vector_format, coefficients_format, GUI_format, name):
         self.connection = None
         self.vectors = []
         self.host = host
         self.port = port
         self.vector_format = vector_format
         self.coefficients_format = coefficients_format
+        #self.GUI_format = 
         self.name = name
 
         self.isLogging = False
