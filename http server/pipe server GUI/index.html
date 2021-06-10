@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+
+<head>
+    <title>VectorBotNet Manipulator</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <LINK href="style.css" rel="stylesheet" type="text/css">
+    <script src="https://aframe.io/releases/0.8.0/aframe.min.js"></script>
+</head>
+
+<body onload="initAll()">
+
+    <div id="VR-container">
+        <a-scene background="color: white" embedded>
+            <a-box color="green" position="5 0 0" scale="10 0.001 0.001"></a-box>
+            <a-box color="blue" position="0 10 0" scale="0.001 20 0.001"></a-box>
+            <a-box color="red" position="0 0 -5" scale="0.001 0.001 10"></a-box>
+            <a-box color="black" position="1 0 0" scale="0.001 0.001 2"></a-box>
+            <a-box color="black" position="0 0 1" scale="2 0.001 0.001"></a-box>
+            <a-box color="black" position="-1 0 0" scale="0.001 0.001 2"></a-box>
+            <a-box color="black" position="0 0 -1" scale="2 0.001 0.001"></a-box>
+            <a-camera position="0 0.5 2" rotation="0 0 0"></a-camera>
+        </a-scene>
+    </div>
+
+    <div id="menu-container">
+        <h1>Control panel</h1>
+        <h2>Connection</h2>
+        <input id="input-connection-host" type="text" placeholder="host" value="0.0.0.0">
+        <input id="input-connection-port" type="text" placeholder="port" value="8888">
+        <input id="input-connection-button" type="button" value="GO" onclick="eventButtonConnection()">
+        <h2>Information</h2>
+        <pre>connection status <b id="output-connection-status">offine</b></pre>
+        <input id="input-button-fullscreen" type="button" value="fullscreen" onclick="eventButtonFullscreen()">
+    </div>
+
+</body>
+
+<script src="script.js"></script>

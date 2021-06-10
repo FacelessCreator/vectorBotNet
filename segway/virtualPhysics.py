@@ -2,9 +2,9 @@ import time
 import sys
 import os
 import math
-from math import sin, cos
 import numpy as np
 from physics import Physics
+from math import sin, cos
 
 class VirtualPhysics(Physics):
     def __init__(self, consts: dict, q):
@@ -19,7 +19,7 @@ class VirtualPhysics(Physics):
         km = consts["km"]
         R = consts["R"]
         g = consts["g"]
-        A = np.array([[J+mt*l*l, -0.5*mt*r*l+J, -0.5*mt*r*l+J], [0.5*mt*r*l, Jk+J+0.5*mk*r*r+0.25*mt*r*r, J+0.5*mk*r*r+0.25*mt*r*r], [0.5*mt*r*l, J+0.5*mk*r*r+0.25*mt*r*r, Jk+J+0.5*mk*r*r+0.25*mt*r*r]])
+        A = np.array([[Jt+mt*l*l, -0.5*mt*r*l+J, -0.5*mt*r*l+J], [0.5*mt*r*l, Jk+J+0.5*mk*r*r+0.25*mt*r*r, J+0.5*mk*r*r+0.25*mt*r*r], [0.5*mt*r*l, J+0.5*mk*r*r+0.25*mt*r*r, Jk+J+0.5*mk*r*r+0.25*mt*r*r]])
         B = np.array([[0, km*ke/R, km*ke/R], [0, km*ke/R, 0], [0, 0, km*ke/R]])
         C = np.array([[-mt*g*l, 0, 0], [0, 0, 0], [0, 0, 0]])
         self.qdefault = q
@@ -85,49 +85,28 @@ class VirtualPhysics2(Physics):
         km = self.consts["km"]
         R = self.consts["R"]
         g = self.consts["g"]
-        q = self.q[0:2] # psi tetaL tetaR
-        q1 = self.q1[0:2] # psi' tetaL' tetaR'
-        U = self.U
-        psi = q[0][0]
-        psi1 = q1[0][0]
-        teta = q[1][0] 
-        teta1 = q1[1][0]
-        a00 = mt*l*r*cos(psi) - 2*J
-        a01 = mt*l**2 + Jt
-        a10 = mt*r**2+2*mk*r**2+2*Jk
-        a11 = mt*l*r*cos(psi)
-
-        b00 = mt*g*l*sin(psi) \
-            + 2*ke*km*teta1/R \
-                - 2*km*U[0][0]/R
-        b10 = 2*km*U[0][0]/R + mt*l*r*psi1**2*sin(psi)-2*ke*km*teta1/R
-        A = np.array(
-            [[a00, a01],
-            [a10, a11]]
-        )
-        B = np.array(
-            [[b00],
-            [b10]]
-        )
-        '''
+        q = self.q # psi tetaL tetaR
+        q1 = self.q1 # psi1 tetaL1 tetaR1
+        U = self.U # UL UR
         a00 = Jt + mt*l**2
-        a01 = mt*l*r*math.cos(q[0][0])/2 - J
-        a02 = mt*l*r*math.cos(q[0][0])/2 - J
-        b0 = mt*g*l*math.sin(q[0][0]) - km*(U[0][0]+U[1][0])/R + km*ke/R*(q1[1][0]+q1[2][0])
-        a10 = mt*l*r*math.cos(q[0][0])/2
+        a01 = - mt*l*r*cos(q[0][0])/2 + J
+        a02 = - mt*l*r*cos(q[0][0])/2 + J
+        b0 = mt*g*l*sin(q[0][0]) - km*(U[0][0]+U[1][0])/R - km*ke/R*(q1[1][0]+q1[2][0])
+        a10 = mt*l*r*cos(q[0][0])/2
         a11 = Jk + J + mk*r**2/2 + mt*r**2/4
-        a12 = mk*r**2/2 + mt*r**2/4
-        b1 = km*U[0][0]/R - km*ke/R*q1[1][0] + mt*l*r*q1[0][0]**2*math.sin(q[0][0])/2
-        a20 = mt*l*r*math.cos(q[0][0])/2
-        a21 = mk*r**2/2 + mt*r**2/4
+        a12 = J + mk*r**2/2 + mt*r**2/4
+        b1 = km*U[0][0]/R - km*ke/R*q1[1][0] + mt*l*r*q1[0][0]**2*sin(q[0][0])/2
+        a20 = mt*l*r*cos(q[0][0])/2
+        a21 = J + mk*r**2/2 + mt*r**2/4
         a22 = Jk + J + mk*r**2/2 + mt*r**2/4
-        b2 = km*U[1][0]/R - km*ke/R*q1[2][0] + mt*l*r*q1[0][0]**2*math.sin(q[0][0])/2
+        b2 = km*U[1][0]/R - km*ke/R*q1[2][0] + mt*l*r*q1[0][0]**2*sin(q[0][0])/2
         A = np.array([[a00, a01, a02], [a10, a11, a12], [a20, a21, a22]])
         B = np.array([[b0],[b1],[b2]])
-        '''
         q2 = np.linalg.inv(A).dot(B)
         self.q1 = q1 + q2*dt
         self.q = q + q1*dt
+        #if (abs(self.q[0][0]) > math.pi/2):
+        #    self.q[0][0] = math.copysign(1, self.q[0][0]) * math.pi/2
         self.t += dt
 
     def setRegulation(self, power_vector):

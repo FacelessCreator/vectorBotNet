@@ -1,3 +1,6 @@
+import sys
+sys.path.insert(1, 'build 3/segway')
+
 from Xlogging import Logging
 from physics import Physics
 from regulator import Regulator

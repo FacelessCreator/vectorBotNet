@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+
+<head>
+    <title>VectorBotNet Manipulator</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <LINK href="style.css" rel="stylesheet" type="text/css">
+    <script src="https://aframe.io/releases/0.8.0/aframe.min.js"></script>
+</head>
+
+<body onload="initAll()">
+
+    <div id="VR-container">
+        <a-scene background="color: white" embedded>
+            <a-box color="green" position="5 0 0" scale="10 0.001 0.001"></a-box>
+            <a-box color="blue" position="0 10 0" scale="0.001 20 0.001"></a-box>
+            <a-box color="red" position="0 0 -5" scale="0.001 0.001 10"></a-box>
+            <a-box color="black" position="1 0 0" scale="0.001 0.001 2"></a-box>
+            <a-box color="black" position="0 0 1" scale="2 0.001 0.001"></a-box>
+            <a-box color="black" position="-1 0 0" scale="0.001 0.001 2"></a-box>
+            <a-box color="black" position="0 0 -1" scale="2 0.001 0.001"></a-box>
+            <a-camera position="0 0.5 2" rotation="0 0 0"></a-camera>
+            <a-entity id='robot-axes1' position='0 0 0'>
+                <a-entity id='robot-part1' geometry='primitive: box; width: 0.1; height: 1; depth: 0.1' position='0 0.5 0' material='color: red'>
+                    <a-entity id='robot-axes2' position='0 0.5 0'>
+                        <a-entity id='robot-part2' geometry='primitive: box; width: 0.1; height: 1; depth: 0.1' position='0 0.5 0' material='color: blue'>
+                            <a-entity id='robot-axes3' position='0 0.5 0'>
+                                <a-entity id='robot-part3' geometry='primitive: box; width: 0.1; height: 1; depth: 0.1' position='0 0.5 0' material='color: gray'>
+
+                                </a-entity>
+                            </a-entity>
+                        </a-entity>
+                    </a-entity>
+                </a-entity>
+            </a-entity>
+        </a-scene>
+    </div>
+
+    <div id="menu-container">
+        <h1>Control panel</h1>
+        <h2>Connection</h2>
+        <input id="input-connection-host" type="text" placeholder="host" value="0.0.0.0">
+        <input id="input-connection-port" type="text" placeholder="port" value="8080">
+        <input id="input-connection-client-name" type="text" placeholder="client name" value="js">
+        <input id="input-connection-button" type="button" value="GO" onclick="eventButtonConnection()">
+        <h2>Information</h2>
+        <pre>connection status <b id="output-connection-status">offine</b>
+is controlling <input id="output-is-controlling" type="checkbox" disabled>
+is logging<input id="output-is-logging" type="checkbox" disabled>
+last vector <b id="output-vector">t: 1.5s [1 2 3]</b>
+experiment time <b id="output-current-time">1.5s</b></pre>
+        <h2>User control</h2>
+        <p>coordinates</p>
+        <input id="input-control-x" type="number" placeholder="x" value="0">
+        <input id="input-control-y" type="number" placeholder="y" value="0">
+        <input id="input-control-z" type="number" placeholder="z" value="0">
+        <input id="input-control-button-coordinates" type="button" value="SEND" onclick="eventButtonSendCoordinates()">
+        <p>angles</p>
+        <input id="input-control-teta1" type="number" placeholder="teta 1" value="0">
+        <input id="input-control-teta2" type="number" placeholder="teta 2" value="0">
+        <input id="input-control-teta3" type="number" placeholder="teta 3" value="0">
+        <input id="input-control-button-angles" type="button" value="SEND" onclick="eventButtonSendAngles()">
+        <input id="input-button-fullscreen" type="button" value="fullscreen" onclick="eventButtonFullscreen()">
+    </div>
+
+</body>
+
+<script src="script.js"></script>
