@@ -1,11 +1,11 @@
 from vectorBotNet.segway.virtualPhysics import VirtualPhysics2
 import botNet
 import time
-from motor import *
-from regulator import *
+from segway.motor import *
+from segway.regulator import *
 from math import pi
 import sys
-import defaults
+import segway.defaults
 import numpy as np
 
 class Segway():

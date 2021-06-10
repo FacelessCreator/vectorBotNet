@@ -1,11 +1,12 @@
 #from vectorBotNet.segway.segway_client import SIZE
+from typing import Sized
 from manipulator.geometry import anglesToCoords, coordsToAngles
 from numpy import NaN
 from botNet import *
 import time
 from manipulator.manipulator_motor import *
 from manipulator.controller import PID
-from math import pi
+from math import pi, sqrt
 import sys
 
 IS_VIRTUAL = True
@@ -16,7 +17,8 @@ km = 0.583
 ke = 0.583
 J = 0.0024
 R = 8.4
-SIZES = [1, 0.5, 0.6]
+
+SIZES = [1, 1, 1]
 
 OUTPUT_NAMES = [1, 2, 3, 4]
 
@@ -24,6 +26,7 @@ class Manipulator():
     global IS_VIRTUAL, MOTORS_COUNT, U_MAX, km, ke, J, R, SIZES
 
     def __init__(self):
+        self.start_time = time.time()
         self.motors = [VirtualMotor(U_MAX, km, ke, J, R) for i in range(MOTORS_COUNT)]
         self.controllers = [PID(0) for i in range(MOTORS_COUNT)]
         self.angles_target = [0]*MOTORS_COUNT
@@ -47,17 +50,23 @@ class Manipulator():
     def set_target(self, target: list):
         x, y, z = target[:3]
         if not x is NaN :
+            distance = sqrt(x**2+(y-SIZES[0])**2+z**2)
+            if distance > SIZES[1]+SIZES[2] :
+                print(f"Координаты {x, y, z} недопустимы для данных размеров робота.")
+                return False
             angles = coordsToAngles([x, y, z], SIZES)
         else:
             angles = target[3:]
         self.angles_target = angles
         self.update_angles()
+        return True
 
     def virtual_tick(self, dt):
         for motor in self.motors:
             motor.tick(dt)
 
     def clearEvent(self):
+        self.start_time = time.time()
         for motor, controler, e in zip(self.motors, self.controllers, self.e):
             motor.clear()
             controler.clear(e)
@@ -93,9 +102,9 @@ if __name__ == "__main__":
     connection.clearEvent = robot.clearEvent
     connection.setCoefficientsEvent = robot.setCoefficientsEvent
 
-    start_time = time.time()
+    start_time = robot.start_time
     time_now = 0 
-    time.sleep(1) # wait for connection
+    time.sleep(3) # wait for connection
     while connection.isConnected():
         dt = time.time() - start_time - time_now
         time_now += dt
